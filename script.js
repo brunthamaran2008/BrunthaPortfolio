@@ -3,7 +3,7 @@ function showMessage() {
 }
 
 // Get projects from backend
-fetch("http://localhost:5000/api/projects")
+fetch("https://bruntha-portfolio.onrender.com/api/projects")
     .then(response => response.json())
     .then(projects => {
 
@@ -40,7 +40,7 @@ document.getElementById("contactForm").addEventListener("submit", function(event
     const email = document.getElementById("email").value;
     const message = document.getElementById("message").value;
 
-    fetch("http://localhost:5000/api/messages", {
+  fetch("https://bruntha-portfolio.onrender.com/api/messages", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
