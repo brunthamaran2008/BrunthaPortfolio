@@ -1,25 +1,17 @@
 const express = require("express");
 const cors = require("cors");
-const mysql = require("mysql2");
+const { Pool } = require("pg");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// MySQL connection
-const db = mysql.createConnection({
-    host: "localhost",
-    user: "root",
-    password: "",
-    database: "portfolio_db"
-});
-
-db.connect((err) => {
-    if (err) {
-        console.log("MySQL connection failed:", err);
-    } else {
-        console.log("MySQL connected successfully!");
+// Supabase PostgreSQL connection
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
     }
 });
 
@@ -27,38 +19,37 @@ app.get("/", (req, res) => {
     res.send("Bruntha Portfolio Backend is Running 🚀");
 });
 
-// Get projects from MySQL
-app.get("/api/projects", (req, res) => {
-
-    db.query("SELECT * FROM projects", (err, results) => {
-
-        if (err) {
-            console.log(err);
-            return res.status(500).json({ error: "Database error" });
-        }
-
-        res.json(results);
-    });
+// Get projects
+app.get("/api/projects", async (req, res) => {
+    try {
+        const result = await pool.query("SELECT * FROM projects ORDER BY id");
+        res.json(result.rows);
+    } catch (error) {
+        console.error("Database error:", error);
+        res.status(500).json({ error: "Database error" });
+    }
 });
-app.post("/api/messages", (req, res) => {
 
-    const { name, email, message } = req.body;
+// Save contact message
+app.post("/api/messages", async (req, res) => {
+    try {
+        const { name, email, message } = req.body;
 
-    const sql = "INSERT INTO messages (name, email, message) VALUES (?, ?, ?)";
-
-    db.query(sql, [name, email, message], (err, result) => {
-
-        if (err) {
-            console.log(err);
-            return res.status(500).json({ error: "Failed to save message" });
-        }
+        await pool.query(
+            "INSERT INTO messages (name, email, message) VALUES ($1, $2, $3)",
+            [name, email, message]
+        );
 
         res.json({ message: "Message saved successfully!" });
-    });
+
+    } catch (error) {
+        console.error("Database error:", error);
+        res.status(500).json({ error: "Failed to save message" });
+    }
 });
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
